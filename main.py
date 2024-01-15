@@ -24,7 +24,9 @@ def plot_function(func, resolution, generations, a, b, initial_population, max_p
         ax.set_xlabel("Generación")
         ax.set_ylabel("Fitness")
 
-        generations = np.arange(0, 51, 1)
+        generations = generations + 1
+
+        generations = np.arange(0, generations, 1)
         best = np.array([])
         worst = np.array([])
         average = np.array([])
