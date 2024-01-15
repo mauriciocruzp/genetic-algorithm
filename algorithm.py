@@ -95,6 +95,34 @@ def mutate_children(children, individual_mutation_probability, gen_mutation_prob
     return children
 
 
+def get_statistics(population, min):
+    best_individual = population[0]
+    worst_individual = population[0]
+    sum = 0
+
+    for individual in population:
+        if min:
+            if individual["f(x)"] < best_individual["f(x)"]:
+                best_individual = individual
+            if individual["f(x)"] > worst_individual["f(x)"]:
+                worst_individual = individual
+        else:
+            if individual["f(x)"] > best_individual["f(x)"]:
+                best_individual = individual
+            if individual["f(x)"] < worst_individual["f(x)"]:
+                worst_individual = individual
+
+        sum += individual["f(x)"]
+
+    return {"best": best_individual, "worst": worst_individual, "average": sum / len(population)}
+
+
+def prune_population(population, max_population):
+    population.sort(key=lambda x: x["f(x)"])
+    population = population[:max_population]
+    return population
+
+
 def genetic_algorithm():
     a = -4
     b = 4
@@ -104,6 +132,9 @@ def genetic_algorithm():
     range_a = b - a
     points = (range_a / resolution) + 1
 
+    min = True
+    statistics = []
+    statistics_history = []
     generations = 20
 
     max_population = 6
@@ -112,26 +143,35 @@ def genetic_algorithm():
     new_resolution = range_a / (2 ** bits_number - 1)
     population = generate_initial_population(initial_population, bits_number, a, new_resolution)
     print(population)
-    statistics = []
     prev_population = population
 
     crossover_probability = 0.8
     individual_mutation_probability = 0.7
     gen_mutation_probability = 0.25
 
-    pairs = select_couple(population, crossover_probability)
+    statistics = get_statistics(population, min)
+    statistics_history.append(statistics)
 
-    children = crossover_pairs(pairs)
+    for i in range(generations):
+        pairs = select_couple(prev_population, crossover_probability)
 
-    mutated_children = mutate_children(children, individual_mutation_probability, gen_mutation_probability)
+        children = crossover_pairs(pairs)
 
-    new_individuals = []
-    for individual in mutated_children:
-        index = calculate_index(individual)
-        x = calculate_x(a, index, new_resolution)
-        fx = evaluate_function(x)
+        mutated_children = mutate_children(children, individual_mutation_probability, gen_mutation_probability)
 
-        new_individuals.append({"number": individual, "index": index, "x": x, "f(x)": fx})
+        new_individuals = []
+        for individual in mutated_children:
+            index = calculate_index(individual)
+            x = calculate_x(a, index, new_resolution)
+            fx = evaluate_function(x)
 
-    new_individuals.extend(prev_population)
-    print(new_individuals)
+            new_individuals.append({"number": individual, "index": index, "x": x, "f(x)": fx})
+
+        new_individuals.extend(prev_population)
+        print(new_individuals)
+
+        statistics = get_statistics(new_individuals, min)
+        statistics_history.append(statistics)
+        prev_population = prune_population(new_individuals, max_population)
+
+    return statistics_history
