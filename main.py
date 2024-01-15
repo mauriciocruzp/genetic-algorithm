@@ -5,30 +5,26 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from algorithm import genetic_algorithm
 
 
-def execute():
-    plot_function(custom_function)
-
-
-def plot_function(custom_function):
-    statistics = genetic_algorithm()
+def plot_function(func, resolution, generations, a, b, initial_population, max_population, crossover_probability,
+                  individual_mutation_probability, gen_mutation_probability, minimize):
+    statistics, population = genetic_algorithm(func, resolution, generations, a, b, initial_population, max_population,
+                                               crossover_probability,
+                                               individual_mutation_probability, gen_mutation_probability, minimize)
     statistics = np.array(statistics)
 
-    try:
-        x_values = np.linspace(-10, 10)
-        y_values = [custom_function(x) for x in x_values]
+    population = np.array(population)
 
-        # Limpia la figura anterior
+    try:
         for widget in frame_plot.winfo_children():
             widget.destroy()
 
-        # Crea una nueva figura y la muestra en el área designada
         fig, ax = plt.subplots(figsize=(6, 4))
         plt.grid(True)
-        ax.set_title("Gráfica de la función")
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
+        ax.set_title("Aptitud")
+        ax.set_xlabel("Generación")
+        ax.set_ylabel("Fitness")
 
-        generations = np.arange(0, 21, 1)
+        generations = np.arange(0, 51, 1)
         best = np.array([])
         worst = np.array([])
         average = np.array([])
@@ -51,9 +47,32 @@ def plot_function(custom_function):
     except Exception as e:
         print("Error al graficar la función:", e)
 
+    try:
+        fig, ax = plt.subplots(figsize=(6, 4))
+        plt.grid(True)
+        ax.set_title("Población")
+        ax.set_xlabel("x")
+        ax.set_ylabel("Fitness")
+
+        x = np.array([])
+        y = np.array([])
+
+        for i in range(len(population)):
+            x = np.append(x, population[i]["x"])
+            y = np.append(y, population[i]["f(x)"])
+
+        ax.scatter(x, y, label="Puntos")
+
+        canvas = FigureCanvasTkAgg(fig, master=frame_plot)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+    except Exception as e:
+        print("Error al graficar la población:", e)
+
 
 def custom_function(x):
-    return x**3 * np.sin(x) + x**2 * np.cos(x)
+    return x ** 3 * np.sin(x) + x ** 2 * np.cos(x)
 
 
 window = tk.Tk()
@@ -67,10 +86,10 @@ left_frame.pack(side=tk.LEFT, padx=10)
 frame1 = tk.LabelFrame(left_frame, text="Parámetros")
 frame1.grid(row=0, column=0, padx=20, pady=30, sticky="ew")
 
-# label_func = tk.Label(left_frame, text="Funcion:")
-# label_func.pack(anchor="w")
-# entry_func = tk.Entry(left_frame, width=50)
-# entry_func.pack(anchor="w")
+func_label = tk.Label(frame1, text="Funcion:")
+func_label.grid(row=0, column=0, sticky="w")
+func_entry = tk.Entry(frame1)
+func_entry.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
 resolution_label = tk.Label(frame1, text="Resolucion inicial:")
 resolution_label.grid(row=1, column=0, sticky="w")
@@ -118,7 +137,6 @@ mutation_per_gene_prob_label.grid(row=9, column=0, sticky="w")
 mutation_per_gene_prob_entry = tk.Entry(frame1)
 mutation_per_gene_prob_entry.grid(row=9, column=1, padx=10, pady=10, sticky="w")
 
-
 method_label = tk.Label(frame1, text="Metodo:")
 method_label.grid(row=10, column=0, sticky="w")
 method = tk.StringVar()
@@ -126,10 +144,27 @@ method.set("Minimizar")
 method_menu = tk.OptionMenu(frame1, method, "Minimizar", "Maximizar")
 method_menu.grid(row=10, column=1, padx=10, sticky="w")
 
+
+def execute():
+    func = str(func_entry.get())
+    resolution = float(resolution_entry.get())
+    generations = int(generations_entry.get())
+    a = float(interval_a_entry.get())
+    b = float(interval_b_entry.get())
+    initial_population = int(initial_population_entry.get())
+    max_population = int(max_population_entry.get())
+    crossover_probability = float(crossover_prob_entry.get())
+    individual_mutation_probability = float(mutation_prob_entry.get())
+    gen_mutation_probability = float(mutation_per_gene_prob_entry.get())
+    minimize = method.get() == "Minimizar"
+
+    plot_function(func, resolution, generations, a, b, initial_population, max_population, crossover_probability,
+                  individual_mutation_probability, gen_mutation_probability, minimize)
+
+
 execute_button = tk.Button(frame1, text="Ejecutar", command=execute)
 execute_button.grid(row=11, column=0, padx=10, pady=10, sticky="w")
 
-# Sección de la derecha para la gráfica
 right_frame = tk.Frame(window)
 right_frame.pack(side=tk.RIGHT, padx=10)
 
