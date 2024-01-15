@@ -1,5 +1,5 @@
 import random
-import math
+import sympy as sp
 
 
 def calculate_bits(points):
@@ -16,15 +16,24 @@ def calculate_index(individual):
     return index
 
 
-def evaluate_function(x):
-    return (x ** 3) * (math.sin(x)) + (x ** 2) * (math.cos(x))
+def evaluate_function(func, value):
+    # func = "x**3*sin(x)+x**2*cos(x)"
+    x = sp.symbols('x')
+
+    try:
+        expression = sp.sympify(func)
+
+        result = expression.subs(x, value)
+        return result
+    except sp.SympifyError:
+        print("Error al analizar la expresión.")
 
 
 def calculate_x(a, index, new_resolution):
     return a + (index * new_resolution)
 
 
-def generate_initial_population(initial_population, bits_number, a, new_resolution):
+def generate_initial_population(initial_population, bits_number, a, new_resolution, func):
     population = []
     for i in range(initial_population):
         individual_number = ""
@@ -33,7 +42,7 @@ def generate_initial_population(initial_population, bits_number, a, new_resoluti
 
         index = calculate_index(individual_number)
         x = calculate_x(a, index, new_resolution)
-        fx = evaluate_function(x)
+        fx = evaluate_function(func, x)
 
         individual = {"number": individual_number, "index": index, "x": x, "f(x)": fx}
         population.append(individual)
@@ -61,7 +70,7 @@ def select_couple(population, crossover_probability):
 
 
 def crossover(individual1, individual2):
-    crossover_point = 2
+    crossover_point = 3
 
     individual1 = individual1["number"]
     individual2 = individual2["number"]
@@ -95,13 +104,13 @@ def mutate_children(children, individual_mutation_probability, gen_mutation_prob
     return children
 
 
-def get_statistics(population, min):
+def get_statistics(population, minimize):
     best_individual = population[0]
     worst_individual = population[0]
     sum = 0
 
     for individual in population:
-        if min:
+        if minimize:
             if individual["f(x)"] < best_individual["f(x)"]:
                 best_individual = individual
             if individual["f(x)"] > worst_individual["f(x)"]:
@@ -117,43 +126,49 @@ def get_statistics(population, min):
     return {"best": best_individual, "worst": worst_individual, "average": sum / len(population)}
 
 
-def prune_population(population, max_population):
-    population.sort(key=lambda x: x["f(x)"])
-    population = population[:max_population]
+def prune_population(population, max_population, minimize):
+    temporal_population = []
+    for individual in population:
+        if individual not in temporal_population:
+            temporal_population.append(individual)
+
+    if minimize:
+        temporal_population.sort(key=lambda x: x["f(x)"])
+    else:
+        temporal_population.sort(key=lambda x: x["f(x)"], reverse=True)
+
+    population = temporal_population[:max_population]
     return population
 
 
-def genetic_algorithm():
-    a = -4
-    b = 4
-    resolution = 0.05
-    initial_population = 3
+def genetic_algorithm(func, initial_resolution, generations, a, b, initial_population, max_population,
+                      crossover_probability, individual_mutation_probability, gen_mutation_probability, minimize):
+    # initial_resolution = 0.05
+    # generations = 50
+    # a = -4
+    # b = 4
+    # initial_population = 3
+    # max_population = 10
+    # crossover_probability = 0.8
+    # individual_mutation_probability = 0.7
+    # gen_mutation_probability = 0.25
+    # minimize = True
 
     range_a = b - a
-    points = (range_a / resolution) + 1
-
-    min = True
-    statistics = []
-    statistics_history = []
-    generations = 20
-
-    max_population = 6
+    points = (range_a / initial_resolution) + 1
 
     bits_number = calculate_bits(points)
     new_resolution = range_a / (2 ** bits_number - 1)
-    population = generate_initial_population(initial_population, bits_number, a, new_resolution)
+    statistics_history = []
+
+    population = generate_initial_population(initial_population, bits_number, a, new_resolution, func)
     print(population)
-    prev_population = population
 
-    crossover_probability = 0.8
-    individual_mutation_probability = 0.7
-    gen_mutation_probability = 0.25
-
-    statistics = get_statistics(population, min)
+    statistics = get_statistics(population, minimize)
     statistics_history.append(statistics)
 
     for i in range(generations):
-        pairs = select_couple(prev_population, crossover_probability)
+        pairs = select_couple(population, crossover_probability)
 
         children = crossover_pairs(pairs)
 
@@ -163,15 +178,15 @@ def genetic_algorithm():
         for individual in mutated_children:
             index = calculate_index(individual)
             x = calculate_x(a, index, new_resolution)
-            fx = evaluate_function(x)
+            fx = evaluate_function(func, x)
 
             new_individuals.append({"number": individual, "index": index, "x": x, "f(x)": fx})
 
-        new_individuals.extend(prev_population)
-        print(new_individuals)
+        new_individuals.extend(population)
 
-        statistics = get_statistics(new_individuals, min)
+        statistics = get_statistics(new_individuals, minimize)
         statistics_history.append(statistics)
-        prev_population = prune_population(new_individuals, max_population)
+        population = prune_population(new_individuals, max_population, minimize)
+    print(population)
 
-    return statistics_history
+    return statistics_history, population
