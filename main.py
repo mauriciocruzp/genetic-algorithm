@@ -10,7 +10,8 @@ def execute():
 
 
 def plot_function(custom_function):
-    genetic_algorithm()
+    statistics = genetic_algorithm()
+    statistics = np.array(statistics)
 
     try:
         x_values = np.linspace(-10, 10)
@@ -22,11 +23,25 @@ def plot_function(custom_function):
 
         # Crea una nueva figura y la muestra en el área designada
         fig, ax = plt.subplots(figsize=(6, 4))
-        ax.plot(x_values, y_values, label="Custom Function")
         plt.grid(True)
         ax.set_title("Gráfica de la función")
         ax.set_xlabel("x")
         ax.set_ylabel("y")
+
+        generations = np.arange(0, 21, 1)
+        best = np.array([])
+        worst = np.array([])
+        average = np.array([])
+
+        for i in range(len(statistics)):
+            best = np.append(best, statistics[i]["best"]["f(x)"])
+            worst = np.append(worst, statistics[i]["worst"]["f(x)"])
+            average = np.append(average, statistics[i]["average"])
+
+        ax.plot(generations, best, label="Mejor")
+        ax.plot(generations, worst, label="Peor")
+        ax.plot(generations, average, label="Promedio")
+
         ax.legend()
 
         canvas = FigureCanvasTkAgg(fig, master=frame_plot)
