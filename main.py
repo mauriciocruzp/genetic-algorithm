@@ -14,10 +14,10 @@ def plot_function(func, resolution, generations, a, b, initial_population, max_p
 
     population = np.array(population)
 
-    try:
-        for widget in frame_plot.winfo_children():
-            widget.destroy()
+    for widget in frame_plot.winfo_children():
+        widget.destroy()
 
+    try:
         fig, ax = plt.subplots(figsize=(6, 4))
         plt.grid(True)
         ax.set_title("Aptitud")
@@ -58,7 +58,6 @@ def plot_function(func, resolution, generations, a, b, initial_population, max_p
 
         x = np.array([])
         y = np.array([])
-        a = a - 2
 
         for i in range(len(population)):
             if a <= population[i]["x"] <= b:
