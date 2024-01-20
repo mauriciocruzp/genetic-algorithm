@@ -58,10 +58,12 @@ def plot_function(func, resolution, generations, a, b, initial_population, max_p
 
         x = np.array([])
         y = np.array([])
+        a = a - 2
 
         for i in range(len(population)):
-            x = np.append(x, population[i]["x"])
-            y = np.append(y, population[i]["f(x)"])
+            if a <= population[i]["x"] <= b:
+                x = np.append(x, population[i]["x"])
+                y = np.append(y, population[i]["f(x)"])
 
         ax.scatter(x, y, label="Puntos")
 
@@ -71,10 +73,6 @@ def plot_function(func, resolution, generations, a, b, initial_population, max_p
 
     except Exception as e:
         print("Error al graficar la población:", e)
-
-
-def custom_function(x):
-    return x ** 3 * np.sin(x) + x ** 2 * np.cos(x)
 
 
 window = tk.Tk()
