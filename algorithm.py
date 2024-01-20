@@ -17,7 +17,6 @@ def calculate_index(individual):
 
 
 def evaluate_function(func, value):
-    # func = "x**3*sin(x)+x**2*cos(x)"
     x = sp.symbols('x')
 
     try:
@@ -143,16 +142,6 @@ def prune_population(population, max_population, minimize):
 
 def genetic_algorithm(func, initial_resolution, generations, a, b, initial_population, max_population,
                       crossover_probability, individual_mutation_probability, gen_mutation_probability, minimize):
-    # initial_resolution = 0.05
-    # generations = 50
-    # a = -4
-    # b = 4
-    # initial_population = 3
-    # max_population = 10
-    # crossover_probability = 0.8
-    # individual_mutation_probability = 0.7
-    # gen_mutation_probability = 0.25
-    # minimize = True
 
     range_a = b - a
     points = (range_a / initial_resolution) + 1
