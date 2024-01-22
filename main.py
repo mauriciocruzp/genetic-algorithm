@@ -7,7 +7,6 @@ import sympy as sp
 import os
 import moviepy.editor as mpy
 from natsort import natsorted
-from tkvideo import tkvideo
 
 def evaluate_function(func, values):
     x = sp.symbols("x")
