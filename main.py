@@ -3,13 +3,55 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from algorithm import genetic_algorithm
+import sympy as sp
+import os
+import moviepy.editor as mpy
+from natsort import natsorted
+from tkvideo import tkvideo
+
+def evaluate_function(func, values):
+    x = sp.symbols("x")
+    results = np.array([])
+    for value in values:
+        expression = sp.sympify(func)
+        result = expression.subs(x, value)
+        results = np.append(results, result)
+
+    return results
 
 
-def plot_function(func, resolution, generations, a, b, initial_population, max_population, crossover_probability,
-                  individual_mutation_probability, gen_mutation_probability, minimize):
-    statistics, population = genetic_algorithm(func, resolution, generations, a, b, initial_population, max_population,
-                                               crossover_probability,
-                                               individual_mutation_probability, gen_mutation_probability, minimize)
+def generate_video():
+    images = natsorted([os.path.join("graphs", fn) for fn in os.listdir("graphs") if fn.endswith((".png", ".jpg", ".jpeg"))])
+    video = mpy.ImageSequenceClip(images, fps=1)
+    video.write_videofile("video.mp4")
+
+
+def plot_function(
+    func,
+    resolution,
+    generations,
+    a,
+    b,
+    initial_population,
+    max_population,
+    crossover_probability,
+    individual_mutation_probability,
+    gen_mutation_probability,
+    minimize,
+):
+    statistics, population = genetic_algorithm(
+        func,
+        resolution,
+        generations,
+        a,
+        b,
+        initial_population,
+        max_population,
+        crossover_probability,
+        individual_mutation_probability,
+        gen_mutation_probability,
+        minimize,
+    )
     statistics = np.array(statistics)
 
     population = np.array(population)
@@ -24,9 +66,7 @@ def plot_function(func, resolution, generations, a, b, initial_population, max_p
         ax.set_xlabel("Generación")
         ax.set_ylabel("Fitness")
 
-        generations = generations + 1
-
-        generations = np.arange(0, generations, 1)
+        generations = np.arange(0, generations + 1, 1)
         best = np.array([])
         worst = np.array([])
         average = np.array([])
@@ -36,9 +76,9 @@ def plot_function(func, resolution, generations, a, b, initial_population, max_p
             worst = np.append(worst, statistics[i]["worst"]["f(x)"])
             average = np.append(average, statistics[i]["average"])
 
-        ax.plot(generations, best, label="Mejor")
-        ax.plot(generations, worst, label="Peor")
-        ax.plot(generations, average, label="Promedio")
+        ax.plot(generations, best, label="Mejor", color="blue")
+        ax.plot(generations, average, label="Promedio", color="green")
+        ax.plot(generations, worst, label="Peor", color="red")
 
         ax.legend()
 
@@ -59,12 +99,42 @@ def plot_function(func, resolution, generations, a, b, initial_population, max_p
         x = np.array([])
         y = np.array([])
 
+        max_fitness = max(population, key=lambda x: x["f(x)"])["f(x)"]
+        min_fitness = min(population, key=lambda x: x["f(x)"])["f(x)"]
+
+        max_x = np.array([])
+        max_y = np.array([])
+        min_x = np.array([])
+        min_y = np.array([])
+
+        x_graph = np.arange(a, b, 0.01)
+
+        population = sorted(population, key=lambda x: x["x"])
+
         for i in range(len(population)):
             if a <= population[i]["x"] <= b:
+                if population[i]["f(x)"] == max_fitness:
+                    max_x = np.append(max_x, population[i]["x"])
+                    max_y = np.append(max_y, population[i]["f(x)"])
+                elif population[i]["f(x)"] == min_fitness:
+                    min_x = np.append(min_x, population[i]["x"])
+                    min_y = np.append(min_y, population[i]["f(x)"])
                 x = np.append(x, population[i]["x"])
                 y = np.append(y, population[i]["f(x)"])
 
-        ax.scatter(x, y, label="Puntos")
+        sin_x = evaluate_function(func, x_graph)
+
+        if minimize:
+            ax.scatter(min_x, min_y, label="Mejor individuo", color="blue", zorder=3)
+            ax.scatter(x, y, label="Individuos", zorder=2, color="green")
+            ax.scatter(max_x, max_y, label="Peor individuo", color="red", zorder=3)
+        else:
+            ax.scatter(max_x, max_y, label="Mejor individuo", color="blue", zorder=3)
+            ax.scatter(x, y, label="Individuos", zorder=2, color="green")
+            ax.scatter(min_x, min_y, label="Peor individuo", color="red", zorder=3)
+        ax.plot(x_graph, sin_x, color="black", zorder=1)
+        ax.set_ylim([float(min_y[0]) - 0.05, float(max_y[0]) + 0.05])
+        ax.legend()
 
         canvas = FigureCanvasTkAgg(fig, master=frame_plot)
         canvas.draw()
@@ -76,7 +146,7 @@ def plot_function(func, resolution, generations, a, b, initial_population, max_p
 
 window = tk.Tk()
 window.title("Algoritmo Genético")
-window.geometry("1200x700")
+window.geometry("1200x720")
 window.resizable(False, False)
 
 left_frame = tk.Frame(window)
@@ -157,8 +227,33 @@ def execute():
     gen_mutation_probability = float(mutation_per_gene_prob_entry.get())
     minimize = method.get() == "Minimizar"
 
-    plot_function(func, resolution, generations, a, b, initial_population, max_population, crossover_probability,
-                  individual_mutation_probability, gen_mutation_probability, minimize)
+    # func = "sin(x)"
+    # resolution = 0.05
+    # generations = 20
+    # a = -5
+    # b = 5
+    # initial_population = 4
+    # max_population = 10
+    # crossover_probability = 0.5
+    # individual_mutation_probability = 0.5
+    # gen_mutation_probability = 0.5
+    # minimize = False
+
+    plot_function(
+        func,
+        resolution,
+        generations,
+        a,
+        b,
+        initial_population,
+        max_population,
+        crossover_probability,
+        individual_mutation_probability,
+        gen_mutation_probability,
+        minimize,
+    )
+
+    generate_video()
 
 
 execute_button = tk.Button(frame1, text="Ejecutar", command=execute)
