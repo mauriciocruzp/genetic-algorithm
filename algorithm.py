@@ -1,5 +1,9 @@
 import random
+import time
 import sympy as sp
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 def calculate_bits(points):
@@ -126,18 +130,81 @@ def get_statistics(population, minimize):
 
 
 def prune_population(population, max_population, minimize):
-    temporal_population = []
-    for individual in population:
-        if individual not in temporal_population:
-            temporal_population.append(individual)
+    unique_population = list({ind['number']: ind for ind in population}.values())
 
-    if minimize:
-        temporal_population.sort(key=lambda x: x["f(x)"])
+    if len(unique_population) > max_population:
+        sorted_population = sorted(unique_population, key=lambda x: x['f(x)'], reverse=not minimize)
+        pruned_population = sorted_population[:max_population]
     else:
-        temporal_population.sort(key=lambda x: x["f(x)"], reverse=True)
+        pruned_population = unique_population
 
-    population = temporal_population[:max_population]
-    return population
+    return pruned_population
+
+
+def evaluate_function_values(func, values):
+    x = sp.symbols('x')
+    results = np.array([])
+    for value in values:
+        expression = sp.sympify(func)
+        result = expression.subs(x, value)
+        results = np.append(results, result)
+
+    return results
+
+
+def generate_graphs(func, a, b, population, minimize, i):
+    try:
+        fig, ax = plt.subplots(figsize=(6, 4))
+        plt.grid(True)
+        ax.set_title("Población")
+        ax.set_xlabel("x")
+        ax.set_ylabel("Fitness")
+
+        x = np.array([])
+        y = np.array([])
+
+        max_fitness = max(population, key=lambda x: x["f(x)"])["f(x)"]
+        min_fitness = min(population, key=lambda x: x["f(x)"])["f(x)"]
+
+        max_x = np.array([])
+        max_y = np.array([])
+        min_x = np.array([])
+        min_y = np.array([])
+
+        x_graph = np.arange(a, b, 0.01)
+
+        population = sorted(population, key=lambda x: x["x"])
+
+        for k in range(len(population)):
+            if a <= population[k]["x"] <= b:
+                if population[k]["f(x)"] == max_fitness:
+                    max_x = np.append(max_x, population[k]["x"])
+                    max_y = np.append(max_y, population[k]["f(x)"])
+                elif population[k]["f(x)"] == min_fitness:
+                    min_x = np.append(min_x, population[k]["x"])
+                    min_y = np.append(min_y, population[k]["f(x)"])
+                x = np.append(x, population[k]["x"])
+                y = np.append(y, population[k]["f(x)"])
+
+        sin_x = evaluate_function_values(func, x_graph)
+
+        if minimize:
+            ax.scatter(min_x, min_y, label="Mejor individuo", color="blue", zorder=3)
+            ax.scatter(x, y, label="Individuos", zorder=2, color="green")
+            ax.scatter(max_x, max_y, label="Peor individuo", color="red", zorder=3)
+        else:
+            ax.scatter(max_x, max_y, label="Mejor individuo", color="blue", zorder=3)
+            ax.scatter(x, y, label="Individuos", zorder=2, color="green")
+            ax.scatter(min_x, min_y, label="Peor individuo", color="red", zorder=3)
+        ax.plot(x_graph, sin_x, color="black", zorder=1)
+        ax.set_ylim([float(min_y[0]) - 0.05, float(max_y[0]) + 0.05])
+        ax.legend()
+
+        fig.savefig(f"graphs/graph_{i}.png")
+
+
+    except Exception as e:
+        print("Error al graficar la población:", e)
 
 
 def genetic_algorithm(func, initial_resolution, generations, a, b, initial_population, max_population,
@@ -176,6 +243,7 @@ def genetic_algorithm(func, initial_resolution, generations, a, b, initial_popul
         statistics = get_statistics(new_individuals, minimize)
         statistics_history.append(statistics)
         population = prune_population(new_individuals, max_population, minimize)
+        generate_graphs(func, a, b, population, minimize, i)
     print(population)
 
     return statistics_history, population
