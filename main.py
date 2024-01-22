@@ -23,7 +23,7 @@ def evaluate_function(func, values):
 def generate_video():
     images = natsorted([os.path.join("graphs", fn) for fn in os.listdir("graphs") if fn.endswith((".png", ".jpg", ".jpeg"))])
     video = mpy.ImageSequenceClip(images, fps=1)
-    video.write_videofile("video.mp4")
+    video.write_videofile("graphs/video.mp4")
 
 
 def plot_function(
