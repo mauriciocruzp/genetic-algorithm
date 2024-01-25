@@ -1,9 +1,10 @@
+import os
 import random
-import time
 import sympy as sp
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.animation import FuncAnimation
+import cv2 as cv
 
 
 def calculate_bits(points):
@@ -152,56 +153,65 @@ def evaluate_function_values(func, values):
     return results
 
 
-def generate_graphs(func, a, b, population, minimize, i):
-    try:
-        fig, ax = plt.subplots(figsize=(6, 4))
+def animate_plot(x, y, a, b, func):
+    x_graph = np.arange(a, b, 0.01)
+    sin_x = evaluate_function_values(func, x_graph)
+
+    fig, ax = plt.subplots()
+
+    def update_plot(i):
+        ax.clear()
         plt.grid(True)
-        ax.set_title("Población")
+        ax.set_title("Mauricio Alonso Cruz Perez - 213352")
         ax.set_xlabel("x")
         ax.set_ylabel("Fitness")
+        ax.scatter(x[:i], y[:i])
+        ax.plot(x_graph, sin_x, color="black", zorder=1)
+        ax.set_ylim([float(min(y)) - 0.05, float(max(y)) + 0.05])
 
+    animation = FuncAnimation(fig, update_plot, range(len(x)), interval=0, cache_frame_data=False, repeat=False)
+    return fig, animation
+
+
+def generate_video(animations_list, names_list):
+    gifs = []
+    for i in range(len(animations_list)):
+        fig, animation = animations_list[i]
+        animation.save(names_list[i], writer='ffmpeg', fps=60, dpi=100)
+        plt.close(fig)
+        gifs.append(cv.VideoCapture(names_list[i]))
+
+    width = int(gifs[0].get(cv.CAP_PROP_FRAME_WIDTH))
+    height = int(gifs[0].get(cv.CAP_PROP_FRAME_HEIGHT))
+    fps = int(gifs[0].get(cv.CAP_PROP_FPS))
+    fourcc = cv.VideoWriter_fourcc(*'mp4v')
+    final_animation = cv.VideoWriter('animations/final_animation.mp4', fourcc, fps, (width, height))
+    for video in gifs:
+        while True:
+            ret, frame = video.read()
+            if not ret:
+                break
+            final_animation.write(frame)
+    for video in gifs:
+        video.release()
+    final_animation.release()
+
+
+def generate_graphs(func, a, b, population):
+    try:
         x = np.array([])
         y = np.array([])
-
-        max_fitness = max(population, key=lambda x: x["f(x)"])["f(x)"]
-        min_fitness = min(population, key=lambda x: x["f(x)"])["f(x)"]
-
-        max_x = np.array([])
-        max_y = np.array([])
-        min_x = np.array([])
-        min_y = np.array([])
-
-        x_graph = np.arange(a, b, 0.01)
 
         population = sorted(population, key=lambda x: x["x"])
 
         for k in range(len(population)):
             if a <= population[k]["x"] <= b:
-                if population[k]["f(x)"] == max_fitness:
-                    max_x = np.append(max_x, population[k]["x"])
-                    max_y = np.append(max_y, population[k]["f(x)"])
-                elif population[k]["f(x)"] == min_fitness:
-                    min_x = np.append(min_x, population[k]["x"])
-                    min_y = np.append(min_y, population[k]["f(x)"])
                 x = np.append(x, population[k]["x"])
                 y = np.append(y, population[k]["f(x)"])
 
-        sin_x = evaluate_function_values(func, x_graph)
+        fig, animar = animate_plot(x, y, a, b, func)
 
-        if minimize:
-            ax.scatter(min_x, min_y, label="Mejor individuo", color="blue", zorder=3)
-            ax.scatter(x, y, label="Individuos", zorder=2, color="green")
-            ax.scatter(max_x, max_y, label="Peor individuo", color="red", zorder=3)
-        else:
-            ax.scatter(max_x, max_y, label="Mejor individuo", color="blue", zorder=3)
-            ax.scatter(x, y, label="Individuos", zorder=2, color="green")
-            ax.scatter(min_x, min_y, label="Peor individuo", color="red", zorder=3)
-        ax.plot(x_graph, sin_x, color="black", zorder=1)
-        ax.set_ylim([float(min_y[0]) - 0.05, float(max_y[0]) + 0.05])
-        ax.legend()
-
-        fig.savefig(f"graphs/graph_{i}.png")
-
+        return fig, animar
 
     except Exception as e:
         print("Error al graficar la población:", e)
@@ -209,7 +219,6 @@ def generate_graphs(func, a, b, population, minimize, i):
 
 def genetic_algorithm(func, initial_resolution, generations, a, b, initial_population, max_population,
                       crossover_probability, individual_mutation_probability, gen_mutation_probability, minimize):
-
     range_a = b - a
     points = (range_a / initial_resolution) + 1
 
@@ -222,6 +231,9 @@ def genetic_algorithm(func, initial_resolution, generations, a, b, initial_popul
 
     statistics = get_statistics(population, minimize)
     statistics_history.append(statistics)
+
+    animations_list = []
+    names_list = []
 
     for i in range(generations):
         pairs = select_couple(population, crossover_probability)
@@ -243,7 +255,12 @@ def genetic_algorithm(func, initial_resolution, generations, a, b, initial_popul
         statistics = get_statistics(new_individuals, minimize)
         statistics_history.append(statistics)
         population = prune_population(new_individuals, max_population, minimize)
-        generate_graphs(func, a, b, population, minimize, i)
+
+        animations_list.append(generate_graphs(func, a, b, population))
+        animation_name = f"animations/animation{i + 1}.gif"
+        names_list.append(animation_name)
+
+    generate_video(animations_list, names_list)
     print(population)
 
     return statistics_history, population
