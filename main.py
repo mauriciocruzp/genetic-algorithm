@@ -8,6 +8,7 @@ import os
 import moviepy.editor as mpy
 from natsort import natsorted
 
+
 def evaluate_function(func, values):
     x = sp.symbols("x")
     results = np.array([])
@@ -19,24 +20,18 @@ def evaluate_function(func, values):
     return results
 
 
-def generate_video():
-    images = natsorted([os.path.join("graphs", fn) for fn in os.listdir("graphs") if fn.endswith((".png", ".jpg", ".jpeg"))])
-    video = mpy.ImageSequenceClip(images, fps=1)
-    video.write_videofile("graphs/video.mp4")
-
-
 def plot_function(
-    func,
-    resolution,
-    generations,
-    a,
-    b,
-    initial_population,
-    max_population,
-    crossover_probability,
-    individual_mutation_probability,
-    gen_mutation_probability,
-    minimize,
+        func,
+        resolution,
+        generations,
+        a,
+        b,
+        initial_population,
+        max_population,
+        crossover_probability,
+        individual_mutation_probability,
+        gen_mutation_probability,
+        minimize,
 ):
     statistics, population = genetic_algorithm(
         func,
@@ -131,6 +126,7 @@ def plot_function(
             ax.scatter(max_x, max_y, label="Mejor individuo", color="blue", zorder=3)
             ax.scatter(x, y, label="Individuos", zorder=2, color="green")
             ax.scatter(min_x, min_y, label="Peor individuo", color="red", zorder=3)
+
         ax.plot(x_graph, sin_x, color="black", zorder=1)
         ax.set_ylim([float(min_y[0]) - 0.05, float(max_y[0]) + 0.05])
         ax.legend()
@@ -251,8 +247,6 @@ def execute():
         gen_mutation_probability,
         minimize,
     )
-
-    generate_video()
 
 
 execute_button = tk.Button(frame1, text="Ejecutar", command=execute)
